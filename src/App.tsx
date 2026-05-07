@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const TILE = 32;
-const PLAYER_SPEED = 0.032;
-const ENEMY_SPEED = 0.012;
+const PLAYER_SPEED = 0.05;
+const ENEMY_SPEED = 0.02;
 const QUEEN_MODE_ENEMY_SPEED = 0.006;
 const QUEEN_MODE_DURATION = 5000;
 const SMALL_ITEMS_TO_SPAWN = 25;
