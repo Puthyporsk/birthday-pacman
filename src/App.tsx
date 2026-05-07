@@ -10,8 +10,8 @@ const BIG_ITEMS_TO_SPAWN = 10;
 const PLAYER_NAME = "Puthykol";
 const AVATAR_SRC = `${import.meta.env.BASE_URL}puthykol-avatar.png`;
 
-const smallPickupIcons = ["🩷", "✨", "🌸", "🍵", "🤍", "🎀"];
-const bigPickupIcons = ["🍰", "💐", "🎁", "👑", "🥂", "🎂"];
+const smallPickupIcons = ["heart", "sparkle", "flower", "matcha", "pearl", "bow"];
+const bigPickupIcons = ["tiramisu", "lilies", "gift", "crown", "toast", "cake"];
 
 const birthdayReasons = [
   "You bring warmth into every room.",
@@ -64,20 +64,27 @@ const loseMessages = [
 ];
 
 const pickupMessages: Record<string, string[]> = {
-  "🍵": ["Matcha secured.", "A little matcha power never hurt anybody."],
-  "🍰": ["Tiramisu saved.", "Dessert protection mission successful."],
-  "💐": ["Lilies collected.", "Birthday flowers acquired."],
-  "👑": ["Birthday Queen Mode activated.", "Crown collected. 31 should be nervous."],
-  "🥂": ["Classy points +100.", "A toast to the birthday queen."],
-  "🎂": ["Cake secured.", "Birthday cake protected from 31."],
-  "🩷": ["Love collected.", "Heart power added."],
-  "✨": ["Sparkle collected.", "The board got a little prettier."],
-  "🌸": ["Soft flower energy collected.", "Cute and classy."],
-  "🤍": ["Clean girl energy collected.", "Elegant point secured."],
-  "🎀": ["Bow collected.", "A tiny cute detail, obviously necessary."],
+  matcha: ["Matcha secured.", "A little matcha power never hurt anybody."],
+  tiramisu: ["Tiramisu saved.", "Dessert protection mission successful."],
+  lilies: ["Lilies collected.", "Birthday flowers acquired."],
+  crown: ["Birthday Queen Mode activated.", "Crown collected. 31 should be nervous."],
+  toast: ["Classy points +100.", "A toast to the birthday queen."],
+  cake: ["Cake secured.", "Birthday cake protected from 31."],
+  heart: ["Love collected.", "Heart power added."],
+  sparkle: ["Sparkle collected.", "The board got a little prettier."],
+  flower: ["Soft flower energy collected.", "Cute and classy."],
+  pearl: ["Clean girl energy collected.", "Elegant point secured."],
+  bow: ["Bow collected.", "A tiny cute detail, obviously necessary."],
 };
 
-const enemyCaptions = ["31", "Adulting", "Back pain", "Bills", "Sleepy by 10", "Where did time go?"];
+const enemyCaptions = [
+  "31",
+  "Adulting",
+  "Back pain",
+  "Bills",
+  "Sleepy by 10",
+  "Where did time go?",
+];
 
 const rawMaps = [
   [
@@ -225,17 +232,29 @@ function parseMap() {
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < grid[y].length; x++) {
       const isPlayerStart = x === playerStart.x && y === playerStart.y;
-      const isEnemyStart = enemyStarts.some((enemy) => enemy.x === x && enemy.y === y);
-      const isNearPlayer = Math.abs(x - playerStart.x) + Math.abs(y - playerStart.y) <= 1;
+      const isEnemyStart = enemyStarts.some(
+        (enemy) => enemy.x === x && enemy.y === y
+      );
+      const isNearPlayer =
+        Math.abs(x - playerStart.x) + Math.abs(y - playerStart.y) <= 1;
 
-      if (grid[y][x] === " " && !isPlayerStart && !isEnemyStart && !isNearPlayer) {
+      if (
+        grid[y][x] === " " &&
+        !isPlayerStart &&
+        !isEnemyStart &&
+        !isNearPlayer
+      ) {
         openCells.push({ x, y });
       }
     }
   }
 
   const shuffledCells = shuffleCells(openCells);
-  const bigItemsToSpawn = Math.min(BIG_ITEMS_TO_SPAWN, bigItemCount, shuffledCells.length);
+  const bigItemsToSpawn = Math.min(
+    BIG_ITEMS_TO_SPAWN,
+    bigItemCount,
+    shuffledCells.length
+  );
   const smallItemsToSpawn = Math.min(
     SMALL_ITEMS_TO_SPAWN,
     smallItemCount,
@@ -269,7 +288,12 @@ function canMove(grid: string[][], entity: Entity, dir: Direction) {
   return !isWall(grid, nextX, nextY);
 }
 
-function moveEntity(grid: string[][], entity: Entity, wantedDir: Direction, speed: number) {
+function moveEntity(
+  grid: string[][],
+  entity: Entity,
+  wantedDir: Direction,
+  speed: number
+) {
   let nextDir = entity.dir;
 
   const centered =
@@ -312,7 +336,9 @@ function chooseEnemyDir(grid: string[][], enemy: Entity, player: Entity) {
 
   if (!centered) return enemy.dir;
 
-  const options = validEnemyDirections(grid, enemy).filter((dir) => dir !== opposite[enemy.dir]);
+  const options = validEnemyDirections(grid, enemy).filter(
+    (dir) => dir !== opposite[enemy.dir]
+  );
   const fallback = validEnemyDirections(grid, enemy);
   const choices = options.length ? options : fallback;
 
@@ -327,7 +353,10 @@ function chooseEnemyDir(grid: string[][], enemy: Entity, player: Entity) {
       const bx = Math.round(enemy.x) + bv.x;
       const by = Math.round(enemy.y) + bv.y;
 
-      return Math.hypot(player.x - ax, player.y - ay) - Math.hypot(player.x - bx, player.y - by);
+      return (
+        Math.hypot(player.x - ax, player.y - ay) -
+        Math.hypot(player.x - bx, player.y - by)
+      );
     })[0];
   }
 
@@ -338,6 +367,131 @@ function getPickupIcon(cell: string, x: number, y: number) {
   const icons = cell === "o" ? bigPickupIcons : smallPickupIcons;
   const index = (x * 7 + y * 13) % icons.length;
   return icons[index];
+}
+
+function drawPickupIcon(
+  ctx: CanvasRenderingContext2D,
+  icon: string,
+  cx: number,
+  cy: number,
+  isBig: boolean
+) {
+  const size = isBig ? 9 : 6;
+
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 1.5;
+
+  if (icon === "matcha") {
+    ctx.fillStyle = "#86efac";
+    ctx.beginPath();
+    ctx.roundRect(cx - size, cy - size / 2, size * 2, size * 1.4, 4);
+    ctx.fill();
+    ctx.strokeStyle = "#ecfccb";
+    ctx.stroke();
+  } else if (icon === "tiramisu" || icon === "cake") {
+    ctx.fillStyle = "#f5d0a9";
+    ctx.fillRect(cx - size, cy - size / 2, size * 2, size);
+    ctx.fillStyle = "#7c2d12";
+    ctx.fillRect(cx - size, cy - size / 2 - 3, size * 2, 3);
+    ctx.fillStyle = "#fff7ed";
+    ctx.fillRect(cx - size, cy + size / 2 - 2, size * 2, 2);
+  } else if (icon === "lilies" || icon === "flower") {
+    ctx.fillStyle = "#fdf2f8";
+
+    for (let i = 0; i < 5; i++) {
+      const angle = (Math.PI * 2 * i) / 5;
+      ctx.beginPath();
+      ctx.ellipse(
+        cx + Math.cos(angle) * 4,
+        cy + Math.sin(angle) * 4,
+        4,
+        2.5,
+        angle,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#f9a8d4";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (icon === "crown") {
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath();
+    ctx.moveTo(cx - size, cy + size / 2);
+    ctx.lineTo(cx - size * 0.55, cy - size / 2);
+    ctx.lineTo(cx, cy + 1);
+    ctx.lineTo(cx + size * 0.55, cy - size / 2);
+    ctx.lineTo(cx + size, cy + size / 2);
+    ctx.closePath();
+    ctx.fill();
+  } else if (icon === "gift") {
+    ctx.fillStyle = "#fb7185";
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    ctx.fillStyle = "#fde68a";
+    ctx.fillRect(cx - 1.5, cy - size, 3, size * 2);
+    ctx.fillRect(cx - size, cy - 1.5, size * 2, 3);
+  } else if (icon === "toast") {
+    ctx.strokeStyle = "#fde68a";
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, cy - 7);
+    ctx.lineTo(cx - 2, cy + 6);
+    ctx.moveTo(cx + 4, cy - 7);
+    ctx.lineTo(cx + 2, cy + 6);
+    ctx.stroke();
+  } else if (icon === "sparkle") {
+    ctx.fillStyle = "#fde047";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - size);
+    ctx.lineTo(cx + 2, cy - 2);
+    ctx.lineTo(cx + size, cy);
+    ctx.lineTo(cx + 2, cy + 2);
+    ctx.lineTo(cx, cy + size);
+    ctx.lineTo(cx - 2, cy + 2);
+    ctx.lineTo(cx - size, cy);
+    ctx.lineTo(cx - 2, cy - 2);
+    ctx.closePath();
+    ctx.fill();
+  } else if (icon === "pearl") {
+    ctx.fillStyle = "#f8fafc";
+    ctx.beginPath();
+    ctx.arc(cx, cy, size, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (icon === "bow") {
+    ctx.fillStyle = "#f9a8d4";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx - size, cy - size / 2);
+    ctx.lineTo(cx - size, cy + size / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + size, cy - size / 2);
+    ctx.lineTo(cx + size, cy + size / 2);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "#ec4899";
+    ctx.beginPath();
+    ctx.arc(cx - size / 3, cy - size / 4, size / 2, 0, Math.PI * 2);
+    ctx.arc(cx + size / 3, cy - size / 4, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - size, cy);
+    ctx.lineTo(cx + size, cy);
+    ctx.lineTo(cx, cy + size);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 function getRandomMessage(messages: string[]) {
@@ -352,17 +506,23 @@ export default function App() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const musicIntervalRef = useRef<number | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastFrameTimeRef = useRef<number | null>(null);
 
   const base = useMemo(() => parseMap(), []);
 
   const [status, setStatus] = useState<GameStatus>("start");
-  const [grid, setGrid] = useState<string[][]>(() => base.grid.map((row) => [...row]));
+  const [grid, setGrid] = useState<string[][]>(() =>
+    base.grid.map((row) => [...row])
+  );
   const [player, setPlayer] = useState<Entity>(base.playerStart);
   const [enemies, setEnemies] = useState<Entity[]>(base.enemyStarts);
   const [score, setScore] = useState(0);
   const [remaining, setRemaining] = useState(base.dots);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
-  const [toast, setToast] = useState("Collect every treasure to unlock the birthday surprise.");
+  const [toast, setToast] = useState(
+    "Collect every treasure to unlock the birthday surprise."
+  );
   const [endMessage, setEndMessage] = useState("");
   const [queenModeUntil, setQueenModeUntil] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
@@ -372,14 +532,57 @@ export default function App() {
   const height = base.grid.length * TILE;
   const queenModeActive = status === "playing" && Date.now() < queenModeUntil;
 
+  function setDirection(direction: Direction) {
+    keyRef.current = direction;
+  }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+  }
+
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+
+    if (!pointerStartRef.current) return;
+
+    const dx = e.clientX - pointerStartRef.current.x;
+    const dy = e.clientY - pointerStartRef.current.y;
+    const minSwipeDistance = 18;
+
+    if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) {
+      pointerStartRef.current = null;
+      return;
+    }
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDirection(dx > 0 ? "right" : "left");
+    } else {
+      setDirection(dy > 0 ? "down" : "up");
+    }
+
+    pointerStartRef.current = null;
+  }
+
   function getAudioContext() {
     if (!audioCtxRef.current) {
       audioCtxRef.current = new AudioContext();
     }
+
     return audioCtxRef.current;
   }
 
-  function playTone(frequency: number, duration = 0.12, type: OscillatorType = "sine", volume = 0.08) {
+  function playTone(
+    frequency: number,
+    duration = 0.12,
+    type: OscillatorType = "sine",
+    volume = 0.08
+  ) {
     if (!soundOn) return;
 
     const ctx = getAudioContext();
@@ -464,7 +667,11 @@ export default function App() {
     }
 
     toastTimeoutRef.current = window.setTimeout(() => {
-      setToast(queenModeActive ? "Birthday Queen Mode is active. 31 is stressed." : "Keep collecting birthday treasures.");
+      setToast(
+        queenModeActive
+          ? "Birthday Queen Mode is active. 31 is stressed."
+          : "Keep collecting birthday treasures."
+      );
     }, 1800);
   }
 
@@ -520,10 +727,10 @@ export default function App() {
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
 
-      if (e.key === "ArrowUp" || key === "w") keyRef.current = "up";
-      if (e.key === "ArrowDown" || key === "s") keyRef.current = "down";
-      if (e.key === "ArrowLeft" || key === "a") keyRef.current = "left";
-      if (e.key === "ArrowRight" || key === "d") keyRef.current = "right";
+      if (e.key === "ArrowUp" || key === "w") setDirection("up");
+      if (e.key === "ArrowDown" || key === "s") setDirection("down");
+      if (e.key === "ArrowLeft" || key === "a") setDirection("left");
+      if (e.key === "ArrowRight" || key === "d") setDirection("right");
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -537,10 +744,20 @@ export default function App() {
     if (status !== "playing") return;
 
     let frame = 0;
+    lastFrameTimeRef.current = null;
 
-    const tick = () => {
+    const tick = (timestamp: number) => {
+      const lastTimestamp = lastFrameTimeRef.current ?? timestamp;
+      const delta = Math.min((timestamp - lastTimestamp) / 16.67, 2);
+      lastFrameTimeRef.current = timestamp;
+
       setPlayer((oldPlayer) => {
-        const movedPlayer = moveEntity(grid, oldPlayer, keyRef.current, PLAYER_SPEED);
+        const movedPlayer = moveEntity(
+          grid,
+          oldPlayer,
+          keyRef.current,
+          PLAYER_SPEED * delta
+        );
         const px = Math.round(movedPlayer.x);
         const py = Math.round(movedPlayer.y);
 
@@ -556,13 +773,14 @@ export default function App() {
 
               setScore((s) => s + points);
 
-              if (pickupIcon === "👑") {
+              if (pickupIcon === "crown") {
                 const until = Date.now() + QUEEN_MODE_DURATION;
                 setQueenModeUntil(until);
                 showToast(getRandomMessage(pickupMessages[pickupIcon]));
                 playPowerSound();
               } else {
-                const messages = pickupMessages[pickupIcon] || ["Birthday treasure collected."];
+                const messages =
+                  pickupMessages[pickupIcon] || ["Birthday treasure collected."];
                 showToast(getRandomMessage(messages));
                 playPickupSound();
               }
@@ -586,15 +804,19 @@ export default function App() {
         }
 
         setEnemies((oldEnemies) => {
-          const enemySpeed = Date.now() < queenModeUntil ? QUEEN_MODE_ENEMY_SPEED : ENEMY_SPEED;
+          const enemySpeed =
+            Date.now() < queenModeUntil ? QUEEN_MODE_ENEMY_SPEED : ENEMY_SPEED;
 
           const nextEnemies = oldEnemies.map((enemy) => {
             const nextDir = chooseEnemyDir(grid, enemy, movedPlayer);
-            return moveEntity(grid, enemy, nextDir, enemySpeed);
+            return moveEntity(grid, enemy, nextDir, enemySpeed * delta);
           });
 
           const caught = nextEnemies.some((enemy) => {
-            return Math.hypot(enemy.x - movedPlayer.x, enemy.y - movedPlayer.y) < 0.62;
+            return (
+              Math.hypot(enemy.x - movedPlayer.x, enemy.y - movedPlayer.y) <
+              0.62
+            );
           });
 
           if (caught && Date.now() >= queenModeUntil) {
@@ -637,7 +859,12 @@ export default function App() {
         const top = y * TILE;
 
         if (cell === "#") {
-          const wallGradient = ctx.createLinearGradient(left, top, left + TILE, top + TILE);
+          const wallGradient = ctx.createLinearGradient(
+            left,
+            top,
+            left + TILE,
+            top + TILE
+          );
           wallGradient.addColorStop(0, "#f9a8d4");
           wallGradient.addColorStop(1, "#f472b6");
 
@@ -647,11 +874,7 @@ export default function App() {
 
         if (cell === "." || cell === "o") {
           const icon = getPickupIcon(cell, x, y);
-
-          ctx.font = cell === "o" ? "18px sans-serif" : "16px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(icon, left + TILE / 2, top + TILE / 2 + 1);
+          drawPickupIcon(ctx, icon, left + TILE / 2, top + TILE / 2, cell === "o");
         }
       }
     }
@@ -697,7 +920,10 @@ export default function App() {
       const ey = enemy.y * TILE;
       const centerX = ex + TILE / 2;
       const centerY = ey + TILE / 2;
-      const caption = enemyCaptions[(index + Math.floor(Date.now() / 1800)) % enemyCaptions.length];
+      const caption =
+        enemyCaptions[
+          (index + Math.floor(Date.now() / 1800)) % enemyCaptions.length
+        ];
 
       ctx.fillStyle = queenModeActive ? "#7f1d1d" : "#fb7185";
       ctx.beginPath();
@@ -727,13 +953,23 @@ export default function App() {
       <div className="w-full max-w-3xl rounded-3xl bg-black/35 shadow-2xl backdrop-blur p-4 sm:p-6 border border-pink-200/20">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-5">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{PLAYER_NAME}&apos;s Birthday Escape</h1>
-            <p className="text-pink-100/90 mt-1">Collect matcha, tiramisu, lilies, and birthday treasures before 31 catches up.</p>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
+              {PLAYER_NAME}&apos;s Birthday Escape
+            </h1>
+            <p className="text-pink-100/90 mt-1">
+              Collect matcha, tiramisu, lilies, and birthday treasures before 31
+              catches up.
+            </p>
           </div>
 
           <div className="text-sm text-pink-50/90 sm:text-right">
-            <div>Score: <span className="font-bold text-yellow-200">{score}</span></div>
-            <div>Items left: <span className="font-bold text-yellow-200">{remaining}</span></div>
+            <div>
+              Score: <span className="font-bold text-yellow-200">{score}</span>
+            </div>
+            <div>
+              Items left:{" "}
+              <span className="font-bold text-yellow-200">{remaining}</span>
+            </div>
           </div>
         </div>
 
@@ -743,10 +979,18 @@ export default function App() {
           </div>
 
           <div className="flex gap-2">
-            <button onClick={() => setSoundOn((v) => !v)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20 transition">
+            <button
+              type="button"
+              onClick={() => setSoundOn((v) => !v)}
+              className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20 transition"
+            >
               Sound: {soundOn ? "On" : "Off"}
             </button>
-            <button onClick={() => setMusicOn((v) => !v)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20 transition">
+            <button
+              type="button"
+              onClick={() => setMusicOn((v) => !v)}
+              className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20 transition"
+            >
               Music: {musicOn ? "On" : "Off"}
             </button>
           </div>
@@ -764,76 +1008,160 @@ export default function App() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-pink-200/15 bg-black/55 flex justify-center p-2 sm:p-3">
-          <canvas ref={canvasRef} width={width} height={height} className="w-full max-w-full h-auto rounded-xl" />
+        <div
+          className="relative overflow-hidden rounded-2xl border border-pink-200/15 bg-black/55 flex justify-center p-2 sm:p-3 touch-none select-none"
+          style={{ touchAction: "none" }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={() => (pointerStartRef.current = null)}
+        >
+          <canvas
+            ref={canvasRef}
+            width={width}
+            height={height}
+            className="w-full max-w-full h-auto rounded-xl"
+          />
 
           {status !== "playing" && (
             <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[2px] overflow-y-auto">
               <div className="min-h-full flex items-start sm:items-center justify-center p-4 sm:p-6">
                 <div className="w-full max-w-xl rounded-2xl bg-black/90 border border-pink-200/20 shadow-2xl p-5 sm:p-6 text-center my-4">
-                {status === "start" && (
-                  <>
-                    {avatarLoaded && <img src={AVATAR_SRC} alt="Puthykol avatar" className="mx-auto mb-4 h-24 w-24 rounded-full border-4 border-yellow-200 object-cover shadow-2xl" />}
-                    <div className="text-5xl mb-3">🎂</div>
-                    <h2 className="text-3xl font-black mb-2">Happy 31st Birthday, {PLAYER_NAME}!</h2>
-                    <p className="text-white/80 mb-5">
-                      Puthykol was peacefully enjoying matcha and tiramisu... until 31 showed up uninvited. Help her collect every birthday treasure and escape with elegance.
-                    </p>
-                    <button onClick={resetGame} className="rounded-2xl bg-pink-500 px-6 py-3 font-bold shadow-lg hover:bg-pink-400 transition">Start Game</button>
-                  </>
-                )}
+                  {status === "start" && (
+                    <>
+                      {avatarLoaded && (
+                        <img
+                          src={AVATAR_SRC}
+                          alt="Puthykol avatar"
+                          className="mx-auto mb-4 h-24 w-24 rounded-full border-4 border-yellow-200 object-cover shadow-2xl"
+                        />
+                      )}
+                      <div className="text-5xl mb-3">🎂</div>
+                      <h2 className="text-3xl font-black mb-2">
+                        Happy 31st Birthday, {PLAYER_NAME}!
+                      </h2>
+                      <p className="text-white/80 mb-5">
+                        Puthykol was peacefully enjoying matcha and tiramisu...
+                        until 31 showed up uninvited. Help her collect every
+                        birthday treasure and escape with elegance.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={resetGame}
+                        className="rounded-2xl bg-pink-500 px-6 py-3 font-bold shadow-lg hover:bg-pink-400 transition"
+                      >
+                        Start Game
+                      </button>
+                    </>
+                  )}
 
-                {status === "ready" && (
-                  <>
-                    <div className="text-5xl mb-3">✨</div>
-                    <h2 className="text-3xl font-black mb-2">Ready?</h2>
-                    <p className="text-white/80 mb-5">Get ready, birthday queen. Protect the matcha and tiramisu.</p>
-                  </>
-                )}
+                  {status === "ready" && (
+                    <>
+                      <div className="text-5xl mb-3">✨</div>
+                      <h2 className="text-3xl font-black mb-2">Ready?</h2>
+                      <p className="text-white/80 mb-5">
+                        Get ready, birthday queen. Protect the matcha and
+                        tiramisu.
+                      </p>
+                    </>
+                  )}
 
-                {status === "won" && (
-                  <>
-                    {avatarLoaded && <img src={AVATAR_SRC} alt="Puthykol avatar" className="mx-auto mb-4 h-24 w-24 rounded-full border-4 border-yellow-200 object-cover shadow-2xl" />}
-                    <div className="text-5xl mb-3">👑</div>
-                    <h2 className="text-3xl font-black mb-2">{PLAYER_NAME} Escaped 31!</h2>
-                    <p className="text-white/80 mb-5">{endMessage || "31 has officially been humbled."}</p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <button onClick={() => setStatus("reveal")} className="rounded-2xl bg-yellow-400 text-slate-950 px-6 py-3 font-bold shadow-lg hover:bg-yellow-300 transition">Reveal Birthday Message</button>
-                      <button onClick={resetGame} className="rounded-2xl bg-white/10 px-6 py-3 font-bold shadow-lg hover:bg-white/20 transition">Play Again</button>
-                    </div>
-                  </>
-                )}
+                  {status === "won" && (
+                    <>
+                      {avatarLoaded && (
+                        <img
+                          src={AVATAR_SRC}
+                          alt="Puthykol avatar"
+                          className="mx-auto mb-4 h-24 w-24 rounded-full border-4 border-yellow-200 object-cover shadow-2xl"
+                        />
+                      )}
+                      <div className="text-5xl mb-3">👑</div>
+                      <h2 className="text-3xl font-black mb-2">
+                        {PLAYER_NAME} Escaped 31!
+                      </h2>
+                      <p className="text-white/80 mb-5">
+                        {endMessage || "31 has officially been humbled."}
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setStatus("reveal")}
+                          className="rounded-2xl bg-yellow-400 text-slate-950 px-6 py-3 font-bold shadow-lg hover:bg-yellow-300 transition"
+                        >
+                          Reveal Birthday Message
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetGame}
+                          className="rounded-2xl bg-white/10 px-6 py-3 font-bold shadow-lg hover:bg-white/20 transition"
+                        >
+                          Play Again
+                        </button>
+                      </div>
+                    </>
+                  )}
 
-                {status === "reveal" && (
-                  <>
-                    {avatarLoaded && <img src={AVATAR_SRC} alt="Puthykol avatar" className="mx-auto mb-4 h-28 w-28 rounded-full border-4 border-pink-200 object-cover shadow-2xl" />}
-                    <div className="text-5xl mb-3">💖</div>
-                    <h2 className="text-3xl font-black mb-2">For {PLAYER_NAME}</h2>
-                    <p className="text-white/80 mb-5">
-                      Happy 31st birthday, {PLAYER_NAME}. This little game is just a silly way to say you are loved, celebrated, and impossible to replace. May this year bring more peace, more laughter, more lilies, more matcha, more tiramisu, and way less stress.
-                    </p>
+                  {status === "reveal" && (
+                    <>
+                      {avatarLoaded && (
+                        <img
+                          src={AVATAR_SRC}
+                          alt="Puthykol avatar"
+                          className="mx-auto mb-4 h-28 w-28 rounded-full border-4 border-pink-200 object-cover shadow-2xl"
+                        />
+                      )}
+                      <div className="text-5xl mb-3">💖</div>
+                      <h2 className="text-3xl font-black mb-2">
+                        For {PLAYER_NAME}
+                      </h2>
+                      <p className="text-white/80 mb-5">
+                        Happy 31st birthday, {PLAYER_NAME}. This little game is
+                        just a silly way to say you are loved, celebrated, and
+                        impossible to replace. May this year bring more peace,
+                        more laughter, more lilies, more matcha, more tiramisu,
+                        and way less stress.
+                      </p>
 
-                    <div className="rounded-2xl bg-white/10 p-4 text-left mb-5 max-h-[45vh] min-h-64 overflow-y-auto border border-white/10 w-full">
-                      <h3 className="font-black text-yellow-200 mb-3">31 reasons you are special</h3>
-                      <ol className="space-y-2 list-decimal list-inside text-white/85">
-                        {birthdayReasons.map((reason, index) => (
-                          <li key={index}>{reason}</li>
-                        ))}
-                      </ol>
-                    </div>
+                      <div className="rounded-2xl bg-white/10 p-4 text-left mb-5 max-h-[45vh] min-h-64 overflow-y-auto border border-white/10 w-full">
+                        <h3 className="font-black text-yellow-200 mb-3">
+                          31 reasons you are special
+                        </h3>
+                        <ol className="space-y-2 list-decimal list-inside text-white/85">
+                          {birthdayReasons.map((reason, index) => (
+                            <li key={index}>{reason}</li>
+                          ))}
+                        </ol>
+                      </div>
 
-                    <button onClick={resetGame} className="rounded-2xl bg-pink-500 px-6 py-3 font-bold shadow-lg hover:bg-pink-400 transition">Play Again</button>
-                  </>
-                )}
+                      <button
+                        type="button"
+                        onClick={resetGame}
+                        className="rounded-2xl bg-pink-500 px-6 py-3 font-bold shadow-lg hover:bg-pink-400 transition"
+                      >
+                        Play Again
+                      </button>
+                    </>
+                  )}
 
-                {status === "lost" && (
-                  <>
-                    <div className="text-5xl mb-3">😅</div>
-                    <h2 className="text-3xl font-black mb-2">31 Caught {PLAYER_NAME}</h2>
-                    <p className="text-white/80 mb-5">{endMessage || "31 got lucky. Try again and remind it who the real birthday icon is."}</p>
-                    <button onClick={resetGame} className="rounded-2xl bg-pink-500 px-6 py-3 font-bold shadow-lg hover:bg-pink-400 transition">Try Again</button>
-                  </>
-                )}
+                  {status === "lost" && (
+                    <>
+                      <div className="text-5xl mb-3">😅</div>
+                      <h2 className="text-3xl font-black mb-2">
+                        31 Caught {PLAYER_NAME}
+                      </h2>
+                      <p className="text-white/80 mb-5">
+                        {endMessage ||
+                          "31 got lucky. Try again and remind it who the real birthday icon is."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={resetGame}
+                        className="rounded-2xl bg-pink-500 px-6 py-3 font-bold shadow-lg hover:bg-pink-400 transition"
+                      >
+                        Try Again
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -841,7 +1169,9 @@ export default function App() {
         </div>
 
         <div className="mt-4 rounded-2xl bg-black/25 border border-pink-200/20 p-3">
-          <p className="text-sm font-bold text-yellow-100 mb-2">Puthykol&apos;s birthday pickups</p>
+          <p className="text-sm font-bold text-yellow-100 mb-2">
+            Puthykol&apos;s birthday pickups
+          </p>
           <div className="flex flex-wrap gap-3 text-sm text-pink-50/90">
             <span>🍵 Matcha</span>
             <span>🍰 Tiramisu</span>
@@ -852,7 +1182,10 @@ export default function App() {
           </div>
         </div>
 
-        <p className="text-xs text-pink-100/75 mt-4 text-center">Use arrow keys or WASD on desktop. On mobile, swipe on the game board to move.</p>
+        <p className="text-xs text-pink-100/75 mt-4 text-center">
+          Use arrow keys or WASD on desktop. On mobile, swipe on the game board
+          to move.
+        </p>
       </div>
     </div>
   );
